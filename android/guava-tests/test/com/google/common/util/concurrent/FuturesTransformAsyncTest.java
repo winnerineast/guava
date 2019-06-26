@@ -16,12 +16,12 @@
 
 package com.google.common.util.concurrent;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.util.concurrent.Futures.transformAsync;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
 
 import com.google.common.util.concurrent.ForwardingListenableFuture.SimpleForwardingListenableFuture;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -57,7 +57,7 @@ public class FuturesTransformAsyncTest extends AbstractChainedListenableFutureTe
 
   private class ChainingFunction implements AsyncFunction<Integer, String> {
     @Override
-    public ListenableFuture<String> apply(Integer input) {
+    public ListenableFuture<String> apply(Integer input) throws Exception {
       switch (input) {
         case VALID_INPUT_DATA:
           outputFuture.set(RESULT_DATA);
@@ -68,8 +68,8 @@ public class FuturesTransformAsyncTest extends AbstractChainedListenableFutureTe
           funcIsWaitingLatch.countDown();
           awaitUninterruptibly(funcCompletionLatch);
           break;
-        default:
-          throw new UndeclaredThrowableException(EXCEPTION);
+        case EXCEPTION_DATA:
+          throw EXCEPTION;
       }
       return outputFuture;
     }
@@ -99,6 +99,11 @@ public class FuturesTransformAsyncTest extends AbstractChainedListenableFutureTe
               + " if function output future is cancelled.");
     } catch (CancellationException expected) {
     }
+  }
+
+  public void testAsyncToString() throws Exception {
+    inputFuture.set(SLOW_OUTPUT_VALID_INPUT_DATA);
+    assertThat(resultFuture.toString()).contains(outputFuture.toString());
   }
 
   public void testFutureCancelBeforeInputCompletion() throws Exception {

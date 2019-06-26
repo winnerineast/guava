@@ -21,8 +21,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.CollectPreconditions.checkRemove;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.collect.AbstractMultimap.Entries;
-import com.google.common.collect.AbstractMultimap.EntrySet;
 import com.google.common.collect.Maps.ViewCachingAbstractMap;
 import com.google.j2objc.annotations.WeakOuter;
 import java.io.Serializable;
@@ -42,6 +40,7 @@ import java.util.RandomAccess;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import org.checkerframework.checker.nullness.compatqual.MonotonicNonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 /**
@@ -322,10 +321,10 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
    */
   @WeakOuter
   class WrappedCollection extends AbstractCollection<V> {
-    final K key;
+    @NullableDecl final K key;
     Collection<V> delegate;
-    final WrappedCollection ancestor;
-    final Collection<V> ancestorDelegate;
+    @NullableDecl final WrappedCollection ancestor;
+    @NullableDecl final Collection<V> ancestorDelegate;
 
     WrappedCollection(
         @NullableDecl K key, Collection<V> delegate, @NullableDecl WrappedCollection ancestor) {
@@ -892,7 +891,7 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
   Set<K> createKeySet() {
     return new KeySet(map);
   }
-  
+
   final Set<K> createMaybeNavigableKeySet() {
     if (map instanceof NavigableMap) {
       return new NavigableKeySet((NavigableMap<K, Collection<V>>) map);
@@ -913,7 +912,7 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
     public Iterator<K> iterator() {
       final Iterator<Entry<K, Collection<V>>> entryIterator = map().entrySet().iterator();
       return new Iterator<K>() {
-        Entry<K, Collection<V>> entry;
+        @NullableDecl Entry<K, Collection<V>> entry;
 
         @Override
         public boolean hasNext() {
@@ -933,6 +932,7 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
           entryIterator.remove();
           totalSize -= collection.size();
           collection.clear();
+          entry = null;
         }
       };
     }
@@ -1111,8 +1111,8 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
 
   private abstract class Itr<T> implements Iterator<T> {
     final Iterator<Entry<K, Collection<V>>> keyIterator;
-    K key;
-    Collection<V> collection;
+    @NullableDecl K key;
+    @MonotonicNonNullDecl Collection<V> collection;
     Iterator<V> valueIterator;
 
     Itr() {
@@ -1200,7 +1200,7 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
   public Collection<Entry<K, V>> entries() {
     return super.entries();
   }
-  
+
   @Override
   Collection<Entry<K, V>> createEntries() {
     if (this instanceof SetMultimap) {
@@ -1232,7 +1232,7 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
   Map<K, Collection<V>> createAsMap() {
     return new AsMap(map);
   }
-  
+
   final Map<K, Collection<V>> createMaybeNavigableAsMap() {
     if (map instanceof NavigableMap) {
       return new NavigableAsMap((NavigableMap<K, Collection<V>>) map);
@@ -1364,7 +1364,7 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
     /** Iterator across all keys and value collections. */
     class AsMapIterator implements Iterator<Entry<K, Collection<V>>> {
       final Iterator<Entry<K, Collection<V>>> delegateIterator = submap.entrySet().iterator();
-      Collection<V> collection;
+      @NullableDecl Collection<V> collection;
 
       @Override
       public boolean hasNext() {
@@ -1380,9 +1380,11 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
 
       @Override
       public void remove() {
+        checkRemove(collection != null);
         delegateIterator.remove();
         totalSize -= collection.size();
         collection.clear();
+        collection = null;
       }
     }
   }
@@ -1427,7 +1429,7 @@ abstract class AbstractMapBasedMultimap<K, V> extends AbstractMultimap<K, V>
       return new SortedAsMap(sortedMap().tailMap(fromKey));
     }
 
-    SortedSet<K> sortedKeySet;
+    @MonotonicNonNullDecl SortedSet<K> sortedKeySet;
 
     // returns a SortedSet, even though returning a Set would be sufficient to
     // satisfy the SortedMap.keySet() interface

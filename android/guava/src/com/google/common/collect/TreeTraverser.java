@@ -67,8 +67,9 @@ import java.util.Queue;
  *     their equivalent on the result of {@code Traverser.forTree(tree)} where {@code tree}
  *     implements {@code SuccessorsFunction}, which has a similar API as {@link #children} or can be
  *     the same lambda function as passed into {@link #using(Function)}.
- *     <p>This class is scheduled to be removed in January 2018.
+ *     <p>This class is scheduled to be removed in October 2019.
  */
+// TODO(b/68134636): Remove by 2019-10
 @Deprecated
 @Beta
 @GwtCompatible
@@ -120,7 +121,6 @@ public abstract class TreeTraverser<T> {
     };
   }
 
-  // overridden in BinaryTreeTraverser
   UnmodifiableIterator<T> preOrderIterator(T root) {
     return new PreOrderIterator(root);
   }
@@ -174,7 +174,6 @@ public abstract class TreeTraverser<T> {
     };
   }
 
-  // overridden in BinaryTreeTraverser
   UnmodifiableIterator<T> postOrderIterator(T root) {
     return new PostOrderIterator(root);
   }

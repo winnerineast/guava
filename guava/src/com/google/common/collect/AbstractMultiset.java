@@ -19,14 +19,14 @@ package com.google.common.collect;
 import static com.google.common.collect.Multisets.setCountImpl;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.base.Objects;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.j2objc.annotations.WeakOuter;
 import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * This class provides a skeletal implementation of the {@link Multiset} interface. A new multiset
@@ -46,70 +46,50 @@ abstract class AbstractMultiset<E> extends AbstractCollection<E> implements Mult
   // Query Operations
 
   @Override
-  public int size() {
-    return Multisets.sizeImpl(this);
-  }
-
-  @Override
   public boolean isEmpty() {
     return entrySet().isEmpty();
   }
 
   @Override
-  public boolean contains(@NullableDecl Object element) {
+  public boolean contains(@Nullable Object element) {
     return count(element) > 0;
-  }
-
-  @Override
-  public Iterator<E> iterator() {
-    return Multisets.iteratorImpl(this);
-  }
-
-  @Override
-  public int count(@NullableDecl Object element) {
-    for (Entry<E> entry : entrySet()) {
-      if (Objects.equal(entry.getElement(), element)) {
-        return entry.getCount();
-      }
-    }
-    return 0;
   }
 
   // Modification Operations
   @CanIgnoreReturnValue
   @Override
-  public boolean add(@NullableDecl E element) {
+  public final boolean add(@Nullable E element) {
     add(element, 1);
     return true;
   }
 
   @CanIgnoreReturnValue
   @Override
-  public int add(@NullableDecl E element, int occurrences) {
+  public int add(@Nullable E element, int occurrences) {
     throw new UnsupportedOperationException();
   }
 
   @CanIgnoreReturnValue
   @Override
-  public boolean remove(@NullableDecl Object element) {
+  public final boolean remove(@Nullable Object element) {
     return remove(element, 1) > 0;
   }
 
   @CanIgnoreReturnValue
   @Override
-  public int remove(@NullableDecl Object element, int occurrences) {
+  public int remove(@Nullable Object element, int occurrences) {
     throw new UnsupportedOperationException();
   }
 
   @CanIgnoreReturnValue
   @Override
-  public int setCount(@NullableDecl E element, int count) {
+  public int setCount(@Nullable E element, int count) {
     return setCountImpl(this, element, count);
   }
 
   @CanIgnoreReturnValue
   @Override
-  public boolean setCount(@NullableDecl E element, int oldCount, int newCount) {
+  public boolean setCount(@Nullable E element, int oldCount, int newCount) {
     return setCountImpl(this, element, oldCount, newCount);
   }
 
@@ -123,30 +103,28 @@ abstract class AbstractMultiset<E> extends AbstractCollection<E> implements Mult
    */
   @CanIgnoreReturnValue
   @Override
-  public boolean addAll(Collection<? extends E> elementsToAdd) {
+  public final boolean addAll(Collection<? extends E> elementsToAdd) {
     return Multisets.addAllImpl(this, elementsToAdd);
   }
 
   @CanIgnoreReturnValue
   @Override
-  public boolean removeAll(Collection<?> elementsToRemove) {
+  public final boolean removeAll(Collection<?> elementsToRemove) {
     return Multisets.removeAllImpl(this, elementsToRemove);
   }
 
   @CanIgnoreReturnValue
   @Override
-  public boolean retainAll(Collection<?> elementsToRetain) {
+  public final boolean retainAll(Collection<?> elementsToRetain) {
     return Multisets.retainAllImpl(this, elementsToRetain);
   }
 
   @Override
-  public void clear() {
-    Iterators.clear(entryIterator());
-  }
+  public abstract void clear();
 
   // Views
 
-  private transient Set<E> elementSet;
+  private transient @MonotonicNonNull Set<E> elementSet;
 
   @Override
   public Set<E> elementSet() {
@@ -171,13 +149,16 @@ abstract class AbstractMultiset<E> extends AbstractCollection<E> implements Mult
     Multiset<E> multiset() {
       return AbstractMultiset.this;
     }
+
+    @Override
+    public Iterator<E> iterator() {
+      return elementIterator();
+    }
   }
 
-  abstract Iterator<Entry<E>> entryIterator();
+  abstract Iterator<E> elementIterator();
 
-  abstract int distinctElements();
-
-  private transient Set<Entry<E>> entrySet;
+  private transient @MonotonicNonNull Set<Entry<E>> entrySet;
 
   @Override
   public Set<Entry<E>> entrySet() {
@@ -210,6 +191,10 @@ abstract class AbstractMultiset<E> extends AbstractCollection<E> implements Mult
     return new EntrySet();
   }
 
+  abstract Iterator<Entry<E>> entryIterator();
+
+  abstract int distinctElements();
+
   // Object methods
 
   /**
@@ -219,7 +204,7 @@ abstract class AbstractMultiset<E> extends AbstractCollection<E> implements Mult
    * and if, for each element, the two multisets have the same count.
    */
   @Override
-  public boolean equals(@NullableDecl Object object) {
+  public final boolean equals(@Nullable Object object) {
     return Multisets.equalsImpl(this, object);
   }
 
@@ -229,7 +214,7 @@ abstract class AbstractMultiset<E> extends AbstractCollection<E> implements Mult
    * <p>This implementation returns the hash code of {@link Multiset#entrySet()}.
    */
   @Override
-  public int hashCode() {
+  public final int hashCode() {
     return entrySet().hashCode();
   }
 
@@ -240,7 +225,7 @@ abstract class AbstractMultiset<E> extends AbstractCollection<E> implements Mult
    * Multiset#entrySet()}.
    */
   @Override
-  public String toString() {
+  public final String toString() {
     return entrySet().toString();
   }
 }

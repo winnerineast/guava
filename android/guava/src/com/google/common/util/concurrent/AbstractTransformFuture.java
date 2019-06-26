@@ -21,7 +21,6 @@ import static com.google.common.util.concurrent.MoreExecutors.rejectionPropagati
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.base.Function;
 import com.google.errorprone.annotations.ForOverride;
-import java.lang.reflect.UndeclaredThrowableException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -29,7 +28,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 /** Implementations of {@code Futures.transform*}. */
 @GwtCompatible
-abstract class AbstractTransformFuture<I, O, F, T> extends AbstractFuture.TrustedFuture<O>
+abstract class AbstractTransformFuture<I, O, F, T> extends FluentFuture.TrustedFuture<O>
     implements Runnable {
   static <I, O> ListenableFuture<O> create(
       ListenableFuture<I> input,
@@ -69,7 +68,13 @@ abstract class AbstractTransformFuture<I, O, F, T> extends AbstractFuture.Truste
       return;
     }
     inputFuture = null;
-    function = null;
+
+    if (localInputFuture.isCancelled()) {
+      @SuppressWarnings("unchecked")
+      boolean unused =
+          setFuture((ListenableFuture<O>) localInputFuture); // Respects cancellation cause setting
+      return;
+    }
 
     /*
      * Any of the setException() calls below can fail if the output Future is cancelled between now
@@ -79,11 +84,12 @@ abstract class AbstractTransformFuture<I, O, F, T> extends AbstractFuture.Truste
      *
      * Contrast this to the situation we have if setResult() throws, a situation described below.
      */
-
     I sourceResult;
     try {
       sourceResult = getDone(localInputFuture);
     } catch (CancellationException e) {
+      // TODO(user): verify future behavior - unify logic with getFutureValue in AbstractFuture. This
+      // code should be unreachable with correctly implemented Futures.
       // Cancel this future and return.
       // At this point, inputFuture is cancelled and outputFuture doesn't exist, so the value of
       // mayInterruptIfRunning is irrelevant.
@@ -110,14 +116,12 @@ abstract class AbstractTransformFuture<I, O, F, T> extends AbstractFuture.Truste
     T transformResult;
     try {
       transformResult = doTransform(localFunction, sourceResult);
-    } catch (UndeclaredThrowableException e) {
-      // Set the cause of the exception as this future's exception.
-      setException(e.getCause());
-      return;
     } catch (Throwable t) {
       // This exception is irrelevant in this thread, but useful for the client.
       setException(t);
       return;
+    } finally {
+      function = null;
     }
 
     /*
@@ -179,8 +183,15 @@ abstract class AbstractTransformFuture<I, O, F, T> extends AbstractFuture.Truste
   protected String pendingToString() {
     ListenableFuture<? extends I> localInputFuture = inputFuture;
     F localFunction = function;
-    if (localInputFuture != null && localFunction != null) {
-      return "inputFuture=[" + localInputFuture + "], function=[" + localFunction + "]";
+    String superString = super.pendingToString();
+    String resultString = "";
+    if (localInputFuture != null) {
+      resultString = "inputFuture=[" + localInputFuture + "], ";
+    }
+    if (localFunction != null) {
+      return resultString + "function=[" + localFunction + "]";
+    } else if (superString != null) {
+      return resultString + superString;
     }
     return null;
   }
@@ -204,7 +215,8 @@ abstract class AbstractTransformFuture<I, O, F, T> extends AbstractFuture.Truste
       checkNotNull(
           outputFuture,
           "AsyncFunction.apply returned null instead of a Future. "
-              + "Did you mean to return immediateFuture(null)?");
+              + "Did you mean to return immediateFuture(null)? %s",
+          function);
       return outputFuture;
     }
 
@@ -229,7 +241,6 @@ abstract class AbstractTransformFuture<I, O, F, T> extends AbstractFuture.Truste
     @NullableDecl
     O doTransform(Function<? super I, ? extends O> function, @NullableDecl I input) {
       return function.apply(input);
-      // TODO(lukes): move the UndeclaredThrowable catch block here?
     }
 
     @Override

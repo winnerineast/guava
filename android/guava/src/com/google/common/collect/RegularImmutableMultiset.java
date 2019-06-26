@@ -15,17 +15,12 @@
 package com.google.common.collect;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.base.Objects;
-import com.google.common.collect.Multisets.ImmutableEntry;
-import com.google.common.base.Objects;
+import com.google.common.annotations.GwtIncompatible;
 import com.google.common.collect.Multiset.Entry;
-import com.google.common.collect.Multisets.ImmutableEntry;
 import com.google.common.primitives.Ints;
 import com.google.errorprone.annotations.concurrent.LazyInit;
 import com.google.j2objc.annotations.WeakOuter;
-import java.util.Collection;
 import java.io.Serializable;
-import java.util.Collection;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 /**
@@ -34,13 +29,13 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
  * @author Jared Levy
  * @author Louis Wasserman
  */
-@GwtCompatible(serializable = true)
+@GwtCompatible(emulated = true, serializable = true)
 @SuppressWarnings("serial") // uses writeReplace(), not default serialization
 class RegularImmutableMultiset<E> extends ImmutableMultiset<E> {
   static final RegularImmutableMultiset<Object> EMPTY =
       new RegularImmutableMultiset<>(ObjectCountHashMap.create());
 
-  private final transient ObjectCountHashMap<E> contents;
+  final transient ObjectCountHashMap<E> contents;
   private final transient int size;
 
   @LazyInit private transient ImmutableSet<E> elementSet;
@@ -76,7 +71,7 @@ class RegularImmutableMultiset<E> extends ImmutableMultiset<E> {
   }
 
   @WeakOuter
-  private final class ElementSet extends ImmutableSet.Indexed<E> {
+  private final class ElementSet extends IndexedImmutableSet<E> {
 
     @Override
     E get(int index) {
@@ -104,6 +99,7 @@ class RegularImmutableMultiset<E> extends ImmutableMultiset<E> {
     return contents.getEntry(index);
   }
 
+  @GwtIncompatible
   private static class SerializedForm implements Serializable {
     final Object[] elements;
     final int[] counts;
@@ -132,8 +128,8 @@ class RegularImmutableMultiset<E> extends ImmutableMultiset<E> {
     private static final long serialVersionUID = 0;
   }
 
-  //We can't label this with @Override, because it doesn't override anything
-  // in the GWT emulated version.
+  @GwtIncompatible
+  @Override
   Object writeReplace() {
     return new SerializedForm(this);
   }

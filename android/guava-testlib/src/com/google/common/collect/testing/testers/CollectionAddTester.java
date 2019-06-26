@@ -31,6 +31,7 @@ import com.google.common.collect.testing.features.CollectionSize;
 import java.lang.reflect.Method;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import org.junit.Ignore;
 
 /**
  * A generic JUnit test which tests {@code add} operations on a collection. Can't be invoked
@@ -41,6 +42,7 @@ import java.util.Iterator;
  */
 @SuppressWarnings("unchecked") // too many "unchecked generic array creations"
 @GwtCompatible(emulated = true)
+@Ignore // Affects only Android test runner, which respects JUnit 4 annotations on JUnit 3 tests.
 public class CollectionAddTester<E> extends AbstractCollectionTester<E> {
   @CollectionFeature.Require(SUPPORTS_ADD)
   public void testAdd_supportedNotPresent() {
@@ -70,9 +72,8 @@ public class CollectionAddTester<E> extends AbstractCollectionTester<E> {
   }
 
   @CollectionFeature.Require(
-    value = {SUPPORTS_ADD, ALLOWS_NULL_VALUES},
-    absent = RESTRICTS_ELEMENTS
-  )
+      value = {SUPPORTS_ADD, ALLOWS_NULL_VALUES},
+      absent = RESTRICTS_ELEMENTS)
   public void testAdd_nullSupported() {
     assertTrue("add(null) should return true", collection.add(null));
     expectAdded((E) null);

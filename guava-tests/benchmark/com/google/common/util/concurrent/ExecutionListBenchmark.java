@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /** Benchmarks for {@link ExecutionList}. */
 @VmOptions({"-Xms8g", "-Xmx8g"})
@@ -186,6 +186,7 @@ public class ExecutionListBenchmark {
             future.set(null);
           }
 
+          @SuppressWarnings("FutureReturnValueIgnored")
           @Override
           public Object getImpl() {
             return future;
@@ -209,6 +210,7 @@ public class ExecutionListBenchmark {
             future.set(null);
           }
 
+          @SuppressWarnings("FutureReturnValueIgnored")
           @Override
           public Object getImpl() {
             return future;
@@ -486,7 +488,7 @@ public class ExecutionListBenchmark {
     private static final class RunnableExecutorPair {
       final Runnable runnable;
       final Executor executor;
-      @NullableDecl RunnableExecutorPair next;
+      @Nullable RunnableExecutorPair next;
 
       RunnableExecutorPair(Runnable runnable, Executor executor, RunnableExecutorPair next) {
         this.runnable = runnable;
@@ -561,7 +563,7 @@ public class ExecutionListBenchmark {
     private static final class RunnableExecutorPair {
       Runnable runnable;
       Executor executor;
-      @NullableDecl RunnableExecutorPair next;
+      @Nullable RunnableExecutorPair next;
 
       RunnableExecutorPair(Runnable runnable, Executor executor) {
         this.runnable = runnable;
@@ -667,7 +669,7 @@ public class ExecutionListBenchmark {
       final Runnable runnable;
       final Executor executor;
       // Volatile because this is written on one thread and read on another with no synchronization.
-      @NullableDecl volatile RunnableExecutorPair next;
+      @Nullable volatile RunnableExecutorPair next;
 
       RunnableExecutorPair(Runnable runnable, Executor executor) {
         this.runnable = runnable;

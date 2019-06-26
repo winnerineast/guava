@@ -42,7 +42,6 @@ import java.util.stream.Collector;
  * @since 21.0
  * @author Louis Wasserman
  */
-@Beta
 @GwtCompatible
 public final class Comparators {
   private Comparators() {}
@@ -61,6 +60,7 @@ public final class Comparators {
   // Note: 90% of the time we don't add type parameters or wildcards that serve only to "tweak" the
   // desired return type. However, *nested* generics introduce a special class of problems that we
   // think tip it over into being worthwhile.
+  @Beta
   public static <T, S extends T> Comparator<Iterable<S>> lexicographical(Comparator<T> comparator) {
     return new LexicographicalOrdering<S>(checkNotNull(comparator));
   }
@@ -70,6 +70,7 @@ public final class Comparators {
    * equal to the element that preceded it, according to the specified comparator. Note that this is
    * always true when the iterable has fewer than two elements.
    */
+  @Beta
   public static <T> boolean isInOrder(Iterable<? extends T> iterable, Comparator<T> comparator) {
     checkNotNull(comparator);
     Iterator<? extends T> it = iterable.iterator();
@@ -91,6 +92,7 @@ public final class Comparators {
    * greater than the element that preceded it, according to the specified comparator. Note that
    * this is always true when the iterable has fewer than two elements.
    */
+  @Beta
   public static <T> boolean isInStrictOrder(
       Iterable<? extends T> iterable, Comparator<T> comparator) {
     checkNotNull(comparator);
@@ -171,7 +173,7 @@ public final class Comparators {
    * @since 22.0
    */
   @Beta
-  public static <T> Comparator<Optional<T>> emptiesFirst(Comparator<T> valueComparator) {
+  public static <T> Comparator<Optional<T>> emptiesFirst(Comparator<? super T> valueComparator) {
     checkNotNull(valueComparator);
     return Comparator.comparing(o -> o.orElse(null), Comparator.nullsFirst(valueComparator));
   }
@@ -184,7 +186,7 @@ public final class Comparators {
    * @since 22.0
    */
   @Beta
-  public static <T> Comparator<Optional<T>> emptiesLast(Comparator<T> valueComparator) {
+  public static <T> Comparator<Optional<T>> emptiesLast(Comparator<? super T> valueComparator) {
     checkNotNull(valueComparator);
     return Comparator.comparing(o -> o.orElse(null), Comparator.nullsLast(valueComparator));
   }

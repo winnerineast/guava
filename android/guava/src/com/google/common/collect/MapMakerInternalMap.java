@@ -1124,11 +1124,7 @@ class MapMakerInternalMap<
     if (entry.getKey() == null) {
       return null;
     }
-    V value = entry.getValue();
-    if (value == null) {
-      return null;
-    }
-    return value;
+    return entry.getValue();
   }
 
   @SuppressWarnings("unchecked")
@@ -2189,7 +2185,7 @@ class MapMakerInternalMap<
     @Override
     public WeakValueReference<K, V, WeakKeyWeakValueEntry<K, V>> getWeakValueReferenceForTesting(
         InternalEntry<K, V, ?> e) {
-      return (castForTesting(e)).getValueReference();
+      return castForTesting(e).getValueReference();
     }
 
     @Override

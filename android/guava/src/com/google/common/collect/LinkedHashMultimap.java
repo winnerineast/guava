@@ -32,8 +32,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -153,11 +151,11 @@ public final class LinkedHashMultimap<K, V>
 
     @NullableDecl ValueEntry<K, V> nextInValueBucket;
 
-    ValueSetLink<K, V> predecessorInValueSet;
-    ValueSetLink<K, V> successorInValueSet;
+    @NullableDecl ValueSetLink<K, V> predecessorInValueSet;
+    @NullableDecl ValueSetLink<K, V> successorInValueSet;
 
-    ValueEntry<K, V> predecessorInMultimap;
-    ValueEntry<K, V> successorInMultimap;
+    @NullableDecl ValueEntry<K, V> predecessorInMultimap;
+    @NullableDecl ValueEntry<K, V> successorInMultimap;
 
     ValueEntry(
         @NullableDecl K key,
@@ -366,7 +364,7 @@ public final class LinkedHashMultimap<K, V>
     public Iterator<V> iterator() {
       return new Iterator<V>() {
         ValueSetLink<K, V> nextEntry = firstEntry;
-        ValueEntry<K, V> toRemove;
+        @NullableDecl ValueEntry<K, V> toRemove;
         int expectedModCount = modCount;
 
         private void checkForComodification() {
@@ -507,7 +505,7 @@ public final class LinkedHashMultimap<K, V>
   Iterator<Entry<K, V>> entryIterator() {
     return new Iterator<Entry<K, V>>() {
       ValueEntry<K, V> nextEntry = multimapHeaderEntry.successorInMultimap;
-      ValueEntry<K, V> toRemove;
+      @NullableDecl ValueEntry<K, V> toRemove;
 
       @Override
       public boolean hasNext() {

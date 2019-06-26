@@ -16,7 +16,7 @@ package com.google.common.cache;
 
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.cache.LocalCache.ValueReference;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * An entry in a reference map.
@@ -47,14 +47,14 @@ interface ReferenceEntry<K, V> {
   void setValueReference(ValueReference<K, V> valueReference);
 
   /** Returns the next entry in the chain. */
-  @NullableDecl
+  @Nullable
   ReferenceEntry<K, V> getNext();
 
   /** Returns the entry's hash. */
   int getHash();
 
   /** Returns the key for this entry. */
-  @NullableDecl
+  @Nullable
   K getKey();
 
   /*
@@ -67,6 +67,7 @@ interface ReferenceEntry<K, V> {
   long getAccessTime();
 
   /** Sets the entry access time in ns. */
+  @SuppressWarnings("GoodTime") // b/122668874
   void setAccessTime(long time);
 
   /** Returns the next entry in the access queue. */
@@ -91,6 +92,7 @@ interface ReferenceEntry<K, V> {
   long getWriteTime();
 
   /** Sets the entry write time in ns. */
+  @SuppressWarnings("GoodTime") // b/122668874
   void setWriteTime(long time);
 
   /** Returns the next entry in the write queue. */

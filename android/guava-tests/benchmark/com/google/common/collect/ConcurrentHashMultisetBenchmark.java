@@ -438,6 +438,11 @@ public class ConcurrentHashMultisetBenchmark {
       };
     }
 
+    @Override
+    Iterator<E> elementIterator() {
+      throw new AssertionError("should never be called");
+    }
+
     private transient EntrySet entrySet;
 
     @Override
@@ -479,6 +484,11 @@ public class ConcurrentHashMultisetBenchmark {
           backingIterator.remove();
         }
       };
+    }
+
+    @Override
+    public Iterator<E> iterator() {
+      return Multisets.iteratorImpl(this);
     }
 
     @Override

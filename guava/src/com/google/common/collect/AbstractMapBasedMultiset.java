@@ -33,7 +33,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.ObjIntConsumer;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Basic implementation of {@code Multiset<E>} backed by an instance of {@code Map<E, Count>}.
@@ -57,8 +58,8 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E> implement
 
   /** Standard constructor. */
   protected AbstractMapBasedMultiset(Map<E, Count> backingMap) {
-    this.backingMap = checkNotNull(backingMap);
-    this.size = super.size();
+    checkArgument(backingMap.isEmpty());
+    this.backingMap = backingMap;
   }
 
   /** Used during deserialization only. The backing map must be empty. */
@@ -81,10 +82,38 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E> implement
   }
 
   @Override
+  Iterator<E> elementIterator() {
+    final Iterator<Map.Entry<E, Count>> backingEntries = backingMap.entrySet().iterator();
+    return new Iterator<E>() {
+      Map.@Nullable Entry<E, Count> toRemove;
+
+      @Override
+      public boolean hasNext() {
+        return backingEntries.hasNext();
+      }
+
+      @Override
+      public E next() {
+        final Map.Entry<E, Count> mapEntry = backingEntries.next();
+        toRemove = mapEntry;
+        return mapEntry.getKey();
+      }
+
+      @Override
+      public void remove() {
+        checkRemove(toRemove != null);
+        size -= toRemove.getValue().getAndSet(0);
+        backingEntries.remove();
+        toRemove = null;
+      }
+    };
+  }
+
+  @Override
   Iterator<Entry<E>> entryIterator() {
     final Iterator<Map.Entry<E, Count>> backingEntries = backingMap.entrySet().iterator();
     return new Iterator<Multiset.Entry<E>>() {
-      Map.Entry<E, Count> toRemove;
+      Map.@Nullable Entry<E, Count> toRemove;
 
       @Override
       public boolean hasNext() {
@@ -164,7 +193,7 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E> implement
    */
   private class MapBasedMultisetIterator implements Iterator<E> {
     final Iterator<Map.Entry<E, Count>> entryIterator;
-    Map.Entry<E, Count> currentEntry;
+    Map.@MonotonicNonNull Entry<E, Count> currentEntry;
     int occurrencesLeft;
     boolean canRemove;
 
@@ -204,7 +233,7 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E> implement
   }
 
   @Override
-  public int count(@NullableDecl Object element) {
+  public int count(@Nullable Object element) {
     Count frequency = Maps.safeGet(backingMap, element);
     return (frequency == null) ? 0 : frequency.get();
   }
@@ -219,7 +248,7 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E> implement
    */
   @CanIgnoreReturnValue
   @Override
-  public int add(@NullableDecl E element, int occurrences) {
+  public int add(@Nullable E element, int occurrences) {
     if (occurrences == 0) {
       return count(element);
     }
@@ -241,7 +270,7 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E> implement
 
   @CanIgnoreReturnValue
   @Override
-  public int remove(@NullableDecl Object element, int occurrences) {
+  public int remove(@Nullable Object element, int occurrences) {
     if (occurrences == 0) {
       return count(element);
     }
@@ -269,7 +298,7 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E> implement
   // Roughly a 33% performance improvement over AbstractMultiset.setCount().
   @CanIgnoreReturnValue
   @Override
-  public int setCount(@NullableDecl E element, int count) {
+  public int setCount(@Nullable E element, int count) {
     checkNonnegative(count, "count");
 
     Count existingCounter;
@@ -290,7 +319,7 @@ abstract class AbstractMapBasedMultiset<E> extends AbstractMultiset<E> implement
     return oldCount;
   }
 
-  private static int getAndSet(@NullableDecl Count i, int count) {
+  private static int getAndSet(@Nullable Count i, int count) {
     if (i == null) {
       return 0;
     }

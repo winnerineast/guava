@@ -22,7 +22,7 @@ import com.google.common.primitives.Longs;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLongArray;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Collections of strategies of generating the k * log(M) bits required for an element to be mapped
@@ -191,7 +191,7 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
     }
 
     boolean get(long bitIndex) {
-      return (data.get((int) (bitIndex >>> 6)) & (1L << bitIndex)) != 0;
+      return (data.get((int) (bitIndex >>> LONG_ADDRESSABLE_BITS)) & (1L << bitIndex)) != 0;
     }
 
     /**
@@ -266,7 +266,7 @@ enum BloomFilterStrategies implements BloomFilter.Strategy {
     }
 
     @Override
-    public boolean equals(@NullableDecl Object o) {
+    public boolean equals(@Nullable Object o) {
       if (o instanceof LockFreeBitArray) {
         LockFreeBitArray lockFreeBitArray = (LockFreeBitArray) o;
         // TODO(lowasser): avoid allocation here

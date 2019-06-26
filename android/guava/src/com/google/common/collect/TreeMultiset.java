@@ -223,6 +223,10 @@ public final class TreeMultiset<E> extends AbstractSortedMultiset<E> implements 
     return Ints.saturatedCast(aggregateForEntries(Aggregate.DISTINCT));
   }
 
+  static int distinctElements(@NullableDecl AvlNode<?> node) {
+    return (node == null) ? 0 : node.distinctElements;
+  }
+
   @Override
   public int count(@NullableDecl Object element) {
     try {
@@ -330,6 +334,30 @@ public final class TreeMultiset<E> extends AbstractSortedMultiset<E> implements 
     return result[0] == oldCount;
   }
 
+  @Override
+  public void clear() {
+    if (!range.hasLowerBound() && !range.hasUpperBound()) {
+      // We can do this in O(n) rather than removing one by one, which could force rebalancing.
+      for (AvlNode<E> current = header.succ; current != header; ) {
+        AvlNode<E> next = current.succ;
+
+        current.elemCount = 0;
+        // Also clear these fields so that one deleted Entry doesn't retain all elements.
+        current.left = null;
+        current.right = null;
+        current.pred = null;
+        current.succ = null;
+
+        current = next;
+      }
+      successor(header, header);
+      rootReference.clear();
+    } else {
+      // TODO(cpovirk): Perhaps we can optimize in this case, too?
+      Iterators.clear(entryIterator());
+    }
+  }
+
   private Entry<E> wrapEntry(final AvlNode<E> baseEntry) {
     return new Multisets.AbstractEntry<E>() {
       @Override
@@ -397,10 +425,15 @@ public final class TreeMultiset<E> extends AbstractSortedMultiset<E> implements 
   }
 
   @Override
+  Iterator<E> elementIterator() {
+    return Multisets.elementIterator(entryIterator());
+  }
+
+  @Override
   Iterator<Entry<E>> entryIterator() {
     return new Iterator<Entry<E>>() {
       AvlNode<E> current = firstNode();
-      Entry<E> prevEntry;
+      @NullableDecl Entry<E> prevEntry;
 
       @Override
       public boolean hasNext() {
@@ -481,6 +514,11 @@ public final class TreeMultiset<E> extends AbstractSortedMultiset<E> implements 
   }
 
   @Override
+  public Iterator<E> iterator() {
+    return Multisets.iteratorImpl(this);
+  }
+
+  @Override
   public SortedMultiset<E> headMultiset(@NullableDecl E upperBound, BoundType boundType) {
     return new TreeMultiset<E>(
         rootReference,
@@ -494,10 +532,6 @@ public final class TreeMultiset<E> extends AbstractSortedMultiset<E> implements 
         rootReference,
         range.intersect(GeneralRange.downTo(comparator(), lowerBound, boundType)),
         header);
-  }
-
-  static int distinctElements(@NullableDecl AvlNode<?> node) {
-    return (node == null) ? 0 : node.distinctElements;
   }
 
   private static final class Reference<T> {
@@ -514,9 +548,13 @@ public final class TreeMultiset<E> extends AbstractSortedMultiset<E> implements 
       }
       value = newValue;
     }
+
+    void clear() {
+      value = null;
+    }
   }
 
-  private static final class AvlNode<E> extends Multisets.AbstractEntry<E> {
+  private static final class AvlNode<E> {
     @NullableDecl private final E elem;
 
     // elemCount is 0 iff this node has been deleted.
@@ -922,13 +960,11 @@ public final class TreeMultiset<E> extends AbstractSortedMultiset<E> implements 
       }
     }
 
-    @Override
-    public E getElement() {
+    E getElement() {
       return elem;
     }
 
-    @Override
-    public int getCount() {
+    int getCount() {
       return elemCount;
     }
 

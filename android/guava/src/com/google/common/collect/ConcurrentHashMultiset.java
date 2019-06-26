@@ -475,6 +475,11 @@ public final class ConcurrentHashMultiset<E> extends AbstractMultiset<E> impleme
     };
   }
 
+  @Override
+  Iterator<E> elementIterator() {
+    throw new AssertionError("should never be called");
+  }
+
   /** @deprecated Internal method, use {@link #entrySet()}. */
   @Deprecated
   @Override
@@ -517,7 +522,7 @@ public final class ConcurrentHashMultiset<E> extends AbstractMultiset<E> impleme
         };
 
     return new ForwardingIterator<Entry<E>>() {
-      private Entry<E> last;
+      @NullableDecl private Entry<E> last;
 
       @Override
       protected Iterator<Entry<E>> delegate() {
@@ -537,6 +542,11 @@ public final class ConcurrentHashMultiset<E> extends AbstractMultiset<E> impleme
         last = null;
       }
     };
+  }
+
+  @Override
+  public Iterator<E> iterator() {
+    return Multisets.iteratorImpl(this);
   }
 
   @Override

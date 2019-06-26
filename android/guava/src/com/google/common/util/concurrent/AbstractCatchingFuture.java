@@ -29,7 +29,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 /** Implementations of {@code Futures.catching*}. */
 @GwtCompatible
 abstract class AbstractCatchingFuture<V, X extends Throwable, F, T>
-    extends AbstractFuture.TrustedFuture<V> implements Runnable {
+    extends FluentFuture.TrustedFuture<V> implements Runnable {
   static <V, X extends Throwable> ListenableFuture<V> create(
       ListenableFuture<? extends V> input,
       Class<X> exceptionType,
@@ -77,8 +77,6 @@ abstract class AbstractCatchingFuture<V, X extends Throwable, F, T>
       return;
     }
     inputFuture = null;
-    exceptionType = null;
-    fallback = null;
 
     // For an explanation of the cases here, see the comments on AbstractTransformFuture.run.
     V sourceResult = null;
@@ -97,7 +95,7 @@ abstract class AbstractCatchingFuture<V, X extends Throwable, F, T>
     }
 
     if (!isInstanceOfThrowableClass(throwable, localExceptionType)) {
-      setException(throwable);
+      setFuture(localInputFuture);
       // TODO(cpovirk): Test that fallback is not run in this case.
       return;
     }
@@ -110,6 +108,9 @@ abstract class AbstractCatchingFuture<V, X extends Throwable, F, T>
     } catch (Throwable t) {
       setException(t);
       return;
+    } finally {
+      exceptionType = null;
+      fallback = null;
     }
 
     setResult(fallbackResult);
@@ -120,14 +121,20 @@ abstract class AbstractCatchingFuture<V, X extends Throwable, F, T>
     ListenableFuture<? extends V> localInputFuture = inputFuture;
     Class<X> localExceptionType = exceptionType;
     F localFallback = fallback;
-    if (localInputFuture != null && localExceptionType != null && localFallback != null) {
-      return "input=["
-          + localInputFuture
-          + "], exceptionType=["
+    String superString = super.pendingToString();
+    String resultString = "";
+    if (localInputFuture != null) {
+      resultString = "inputFuture=[" + localInputFuture + "], ";
+    }
+    if (localExceptionType != null && localFallback != null) {
+      return resultString
+          + "exceptionType=["
           + localExceptionType
           + "], fallback=["
           + localFallback
           + "]";
+    } else if (superString != null) {
+      return resultString + superString;
     }
     return null;
   }
@@ -170,7 +177,8 @@ abstract class AbstractCatchingFuture<V, X extends Throwable, F, T>
       checkNotNull(
           replacement,
           "AsyncFunction.apply returned null instead of a Future. "
-              + "Did you mean to return immediateFuture(null)?");
+              + "Did you mean to return immediateFuture(null)? %s",
+          fallback);
       return replacement;
     }
 

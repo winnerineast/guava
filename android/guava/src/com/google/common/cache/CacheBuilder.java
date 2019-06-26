@@ -142,8 +142,12 @@ import org.checkerframework.checker.nullness.compatqual.MonotonicNonNullDecl;
  * href="https://github.com/google/guava/wiki/CachesExplained">caching</a> for a higher-level
  * explanation.
  *
- * @param <K> the base key type for all caches created by this builder
- * @param <V> the base value type for all caches created by this builder
+ * @param <K> the most general key type this builder will be able to create caches for. This is
+ *     normally {@code Object} unless it is constrained by using a method like {@code
+ *     #removalListener}
+ * @param <V> the most general value type this builder will be able to create caches for. This is
+ *     normally {@code Object} unless it is constrained by using a method like {@code
+ *     #removalListener}
  * @author Charles Fry
  * @author Kevin Bourrillion
  * @since 10.0
@@ -152,7 +156,11 @@ import org.checkerframework.checker.nullness.compatqual.MonotonicNonNullDecl;
 public final class CacheBuilder<K, V> {
   private static final int DEFAULT_INITIAL_CAPACITY = 16;
   private static final int DEFAULT_CONCURRENCY_LEVEL = 4;
+
+  @SuppressWarnings("GoodTime") // should be a java.time.Duration
   private static final int DEFAULT_EXPIRATION_NANOS = 0;
+
+  @SuppressWarnings("GoodTime") // should be a java.time.Duration
   private static final int DEFAULT_REFRESH_NANOS = 0;
 
   static final Supplier<? extends StatsCounter> NULL_STATS_COUNTER =
@@ -164,9 +172,11 @@ public final class CacheBuilder<K, V> {
             @Override
             public void recordMisses(int count) {}
 
+            @SuppressWarnings("GoodTime") // b/122668874
             @Override
             public void recordLoadSuccess(long loadTime) {}
 
+            @SuppressWarnings("GoodTime") // b/122668874
             @Override
             public void recordLoadException(long loadTime) {}
 
@@ -227,8 +237,13 @@ public final class CacheBuilder<K, V> {
   @MonotonicNonNullDecl Strength keyStrength;
   @MonotonicNonNullDecl Strength valueStrength;
 
+  @SuppressWarnings("GoodTime") // should be a java.time.Duration
   long expireAfterWriteNanos = UNSET_INT;
+
+  @SuppressWarnings("GoodTime") // should be a java.time.Duration
   long expireAfterAccessNanos = UNSET_INT;
+
+  @SuppressWarnings("GoodTime") // should be a java.time.Duration
   long refreshNanos = UNSET_INT;
 
   @MonotonicNonNullDecl Equivalence<Object> keyEquivalence;
@@ -244,6 +259,9 @@ public final class CacheBuilder<K, V> {
   /**
    * Constructs a new {@code CacheBuilder} instance with default settings, including strong keys,
    * strong values, and no automatic eviction of any kind.
+   *
+   * <p>Note that while this return type is {@code CacheBuilder<Object, Object>}, type parameters on
+   * the {@link #build} methods allow you to create a cache of any key and value type desired.
    */
   public static CacheBuilder<Object, Object> newBuilder() {
     return new CacheBuilder<>();
@@ -633,6 +651,7 @@ public final class CacheBuilder<K, V> {
    * @throws IllegalArgumentException if {@code duration} is negative
    * @throws IllegalStateException if the time to live or time to idle was already set
    */
+  @SuppressWarnings("GoodTime") // should accept a java.time.Duration
   public CacheBuilder<K, V> expireAfterWrite(long duration, TimeUnit unit) {
     checkState(
         expireAfterWriteNanos == UNSET_INT,
@@ -669,6 +688,7 @@ public final class CacheBuilder<K, V> {
    * @throws IllegalArgumentException if {@code duration} is negative
    * @throws IllegalStateException if the time to idle or time to live was already set
    */
+  @SuppressWarnings("GoodTime") // should accept a java.time.Duration
   public CacheBuilder<K, V> expireAfterAccess(long duration, TimeUnit unit) {
     checkState(
         expireAfterAccessNanos == UNSET_INT,
@@ -712,6 +732,7 @@ public final class CacheBuilder<K, V> {
    * @since 11.0
    */
   @GwtIncompatible // To be supported (synchronously).
+  @SuppressWarnings("GoodTime") // should accept a java.time.Duration
   public CacheBuilder<K, V> refreshAfterWrite(long duration, TimeUnit unit) {
     checkNotNull(unit);
     checkState(refreshNanos == UNSET_INT, "refresh was already set to %s ns", refreshNanos);

@@ -249,6 +249,11 @@ public abstract class ForwardingMultiset<E> extends ForwardingCollection<E> impl
     Multiset<E> multiset() {
       return ForwardingMultiset.this;
     }
+
+    @Override
+    public Iterator<E> iterator() {
+      return Multisets.elementIterator(multiset().entrySet().iterator());
+    }
   }
 
   /**
@@ -270,7 +275,7 @@ public abstract class ForwardingMultiset<E> extends ForwardingCollection<E> impl
    * @since 7.0
    */
   protected int standardSize() {
-    return Multisets.sizeImpl(this);
+    return Multisets.linearTimeSizeImpl(this);
   }
 
   /**

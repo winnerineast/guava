@@ -17,10 +17,6 @@
 package com.google.common.collect;
 
 import com.google.common.annotations.GwtCompatible;
-import com.google.common.annotations.GwtIncompatible;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
 /**
  * A {@code Multiset} implementation with predictable iteration order. Its iterator orders elements
@@ -38,12 +34,11 @@ import java.io.ObjectOutputStream;
  * @since 2.0
  */
 @GwtCompatible(serializable = true, emulated = true)
-@SuppressWarnings("serial") // we're overriding default serialization
 public final class LinkedHashMultiset<E> extends AbstractMapBasedMultiset<E> {
 
   /** Creates a new, empty {@code LinkedHashMultiset} using the default initial capacity. */
   public static <E> LinkedHashMultiset<E> create() {
-    return new LinkedHashMultiset<E>();
+    return create(ObjectCountHashMap.DEFAULT_SIZE);
   }
 
   /**
@@ -70,32 +65,12 @@ public final class LinkedHashMultiset<E> extends AbstractMapBasedMultiset<E> {
     return multiset;
   }
 
-  private LinkedHashMultiset() {
-    super(new ObjectCountLinkedHashMap<E>());
+  LinkedHashMultiset(int distinctElements) {
+    super(distinctElements);
   }
 
-  private LinkedHashMultiset(int distinctElements) {
-    super(new ObjectCountLinkedHashMap<E>(distinctElements));
+  @Override
+  void init(int distinctElements) {
+    backingMap = new ObjectCountLinkedHashMap<>(distinctElements);
   }
-
-  /**
-   * @serialData the number of distinct elements, the first element, its count, the second element,
-   *     its count, and so on
-   */
-  @GwtIncompatible // java.io.ObjectOutputStream
-  private void writeObject(ObjectOutputStream stream) throws IOException {
-    stream.defaultWriteObject();
-    Serialization.writeMultiset(this, stream);
-  }
-
-  @GwtIncompatible // java.io.ObjectInputStream
-  private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-    stream.defaultReadObject();
-    int distinctElements = Serialization.readCount(stream);
-    setBackingMap(new ObjectCountLinkedHashMap<E>());
-    Serialization.populateMultiset(this, stream, distinctElements);
-  }
-
-  @GwtIncompatible // not needed in emulated source
-  private static final long serialVersionUID = 0;
 }

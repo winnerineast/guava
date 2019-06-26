@@ -16,8 +16,11 @@
 
 package com.google.common.math;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.google.common.annotations.GwtCompatible;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import junit.framework.TestCase;
 
 /**
@@ -261,26 +264,29 @@ public class MathPreconditionsTest extends TestCase {
   }
 
   public void testCheckInRange_success() {
-    MathPreconditions.checkInRange(true);
+    MathPreconditions.checkInRangeForRoundingInputs(true, 1.0, RoundingMode.UP);
   }
 
   public void testCheckInRange_failure() {
     try {
-      MathPreconditions.checkInRange(false);
+      MathPreconditions.checkInRangeForRoundingInputs(false, 1.0, RoundingMode.UP);
       fail();
     } catch (ArithmeticException expected) {
+      assertThat(expected).hasMessageThat().contains("1.0");
+      assertThat(expected).hasMessageThat().contains("UP");
     }
   }
 
   public void testCheckNoOverflow_success() {
-    MathPreconditions.checkNoOverflow(true);
+    MathPreconditions.checkNoOverflow(true, "testCheckNoOverflow_success", 0, 0);
   }
 
   public void testCheckNoOverflow_failure() {
     try {
-      MathPreconditions.checkNoOverflow(false);
+      MathPreconditions.checkNoOverflow(false, "testCheckNoOverflow_failure", 0, 0);
       fail();
     } catch (ArithmeticException expected) {
+      assertThat(expected).hasMessageThat().contains("testCheckNoOverflow_failure(0, 0)");
     }
   }
 }

@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.common.collect;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+package com.google.common.collect;
 
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.annotations.VisibleForTesting;
@@ -25,8 +24,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 /**
  * CompactLinkedHashMap is an implementation of a Map with insertion or LRU iteration order,
@@ -35,11 +33,16 @@ import java.util.function.Consumer;
  *
  * <p>{@code containsKey(k)}, {@code put(k, v)} and {@code remove(k)} are all (expected and
  * amortized) constant time operations. Expected in the hashtable sense (depends on the hash
- * function doing a good job of distributing the elements to the buckets to a distribution not
- * far from uniform), and amortized since some operations can trigger a hash table resize.
+ * function doing a good job of distributing the elements to the buckets to a distribution not far
+ * from uniform), and amortized since some operations can trigger a hash table resize.
  *
- * <p>As compared with {@link java.util.LinkedHashMap}, this structure places significantly
- * reduced load on the garbage collector by only using a constant number of internal objects.
+ * <p>As compared with {@link java.util.LinkedHashMap}, this structure places significantly reduced
+ * load on the garbage collector by only using a constant number of internal objects.
+ *
+ * <p>This class should not be assumed to be universally superior to {@code
+ * java.util.LinkedHashMap}. Generally speaking, this class reduces object allocation and memory
+ * consumption at the price of moderately increased constant factors of CPU. Only use this class
+ * when there is a specific reason to prioritize memory over CPU.
  *
  * @author Louis Wasserman
  */
@@ -47,20 +50,18 @@ import java.util.function.Consumer;
 class CompactLinkedHashMap<K, V> extends CompactHashMap<K, V> {
   // TODO(lowasser): implement removeEldestEntry so this can be used as a drop-in replacement
 
-  /**
-   * Creates an empty {@code CompactLinkedHashMap} instance.
-   */
+  /** Creates an empty {@code CompactLinkedHashMap} instance. */
   public static <K, V> CompactLinkedHashMap<K, V> create() {
     return new CompactLinkedHashMap<>();
   }
 
   /**
-   * Creates a {@code CompactLinkedHashMap} instance, with a high enough "initial capacity"
-   * that it <i>should</i> hold {@code expectedSize} elements without growth.
+   * Creates a {@code CompactLinkedHashMap} instance, with a high enough "initial capacity" that it
+   * <i>should</i> hold {@code expectedSize} elements without rebuilding internal data structures.
    *
    * @param expectedSize the number of elements you expect to add to the returned set
    * @return a new, empty {@code CompactLinkedHashMap} with enough capacity to hold {@code
-   *         expectedSize} elements without resizing
+   *     expectedSize} elements without resizing
    * @throws IllegalArgumentException if {@code expectedSize} is negative
    */
   public static <K, V> CompactLinkedHashMap<K, V> createWithExpectedSize(int expectedSize) {
@@ -75,19 +76,15 @@ class CompactLinkedHashMap<K, V> extends CompactHashMap<K, V> {
    * (pointing to the next entry in the linked list). The pointers in [size(), entries.length) are
    * all "null" (UNSET).
    *
-   * A node with "prev" pointer equal to {@code ENDPOINT} is the first node in the linked list,
+   * <p>A node with "prev" pointer equal to {@code ENDPOINT} is the first node in the linked list,
    * and a node with "next" pointer equal to {@code ENDPOINT} is the last node.
    */
-  @VisibleForTesting transient long[] links;
+  @VisibleForTesting transient long @MonotonicNonNull [] links;
 
-  /**
-   * Pointer to the first node in the linked list, or {@code ENDPOINT} if there are no entries.
-   */
+  /** Pointer to the first node in the linked list, or {@code ENDPOINT} if there are no entries. */
   private transient int firstEntry;
 
-  /**
-   * Pointer to the last node in the linked list, or {@code ENDPOINT} if there are no entries.
-   */
+  /** Pointer to the last node in the linked list, or {@code ENDPOINT} if there are no entries. */
   private transient int lastEntry;
 
   private final boolean accessOrder;
@@ -97,20 +94,26 @@ class CompactLinkedHashMap<K, V> extends CompactHashMap<K, V> {
   }
 
   CompactLinkedHashMap(int expectedSize) {
-    this(expectedSize, DEFAULT_LOAD_FACTOR, false);
+    this(expectedSize, false);
   }
 
-  CompactLinkedHashMap(int expectedSize, float loadFactor, boolean accessOrder) {
-    super(expectedSize, loadFactor);
+  CompactLinkedHashMap(int expectedSize, boolean accessOrder) {
+    super(expectedSize);
     this.accessOrder = accessOrder;
   }
 
   @Override
-  void init(int expectedSize, float loadFactor) {
-    super.init(expectedSize, loadFactor);
-    firstEntry = ENDPOINT;
-    lastEntry = ENDPOINT;
-    links = new long[expectedSize];
+  void init(int expectedSize) {
+    super.init(expectedSize);
+    this.firstEntry = ENDPOINT;
+    this.lastEntry = ENDPOINT;
+  }
+
+  @Override
+  void allocArrays() {
+    super.allocArrays();
+    int expectedSize = keys.length; // allocated size may be different than initial capacity
+    this.links = new long[expectedSize];
     Arrays.fill(links, UNSET);
   }
 
@@ -129,7 +132,7 @@ class CompactLinkedHashMap<K, V> extends CompactHashMap<K, V> {
   }
 
   private void setPredecessor(int entry, int pred) {
-    long predMask = (~0L) << 32;
+    long predMask = ~0L << 32;
     links[entry] = (links[entry] & ~predMask) | ((long) pred << 32);
   }
 
@@ -139,6 +142,7 @@ class CompactLinkedHashMap<K, V> extends CompactHashMap<K, V> {
     } else {
       setSuccessor(pred, succ);
     }
+
     if (succ == ENDPOINT) {
       lastEntry = pred;
     } else {
@@ -168,18 +172,24 @@ class CompactLinkedHashMap<K, V> extends CompactHashMap<K, V> {
   @Override
   void moveLastEntry(int dstIndex) {
     int srcIndex = size() - 1;
+    super.moveLastEntry(dstIndex);
+
     setSucceeds(getPredecessor(dstIndex), getSuccessor(dstIndex));
     if (dstIndex < srcIndex) {
       setSucceeds(getPredecessor(srcIndex), dstIndex);
       setSucceeds(dstIndex, getSuccessor(srcIndex));
     }
-    super.moveLastEntry(dstIndex);
+    links[srcIndex] = UNSET;
   }
 
   @Override
   void resizeEntries(int newCapacity) {
     super.resizeEntries(newCapacity);
+    int oldCapacity = links.length;
     links = Arrays.copyOf(links, newCapacity);
+    if (oldCapacity < newCapacity) {
+      Arrays.fill(links, oldCapacity, newCapacity, UNSET);
+    }
   }
 
   @Override
@@ -190,14 +200,6 @@ class CompactLinkedHashMap<K, V> extends CompactHashMap<K, V> {
   @Override
   int adjustAfterRemove(int indexBeforeRemove, int indexRemoved) {
     return (indexBeforeRemove >= size()) ? indexRemoved : indexBeforeRemove;
-  }
-
-  @Override
-  public void forEach(BiConsumer<? super K, ? super V> action) {
-    checkNotNull(action);
-    for (int i = firstEntry; i != ENDPOINT; i = getSuccessor(i)) {
-      action.accept((K) keys[i], (V) values[i]);
-    }
   }
 
   @Override
@@ -230,14 +232,6 @@ class CompactLinkedHashMap<K, V> extends CompactHashMap<K, V> {
       public Spliterator<K> spliterator() {
         return Spliterators.spliterator(this, Spliterator.ORDERED | Spliterator.DISTINCT);
       }
-
-      @Override
-      public void forEach(Consumer<? super K> action) {
-        checkNotNull(action);
-        for (int i = firstEntry; i != ENDPOINT; i = getSuccessor(i)) {
-          action.accept((K) keys[i]);
-        }
-      }
     }
     return new KeySetImpl();
   }
@@ -260,22 +254,18 @@ class CompactLinkedHashMap<K, V> extends CompactHashMap<K, V> {
       public Spliterator<V> spliterator() {
         return Spliterators.spliterator(this, Spliterator.ORDERED);
       }
-
-      @Override
-      public void forEach(Consumer<? super V> action) {
-        checkNotNull(action);
-        for (int i = firstEntry; i != ENDPOINT; i = getSuccessor(i)) {
-          action.accept((V) values[i]);
-        }
-      }
     }
     return new ValuesImpl();
   }
 
   @Override
   public void clear() {
-    super.clear();
+    if (needsAllocArrays()) {
+      return;
+    }
     this.firstEntry = ENDPOINT;
     this.lastEntry = ENDPOINT;
+    Arrays.fill(links, 0, size(), UNSET);
+    super.clear();
   }
 }

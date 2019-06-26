@@ -25,6 +25,7 @@ import com.google.common.base.Converter;
 import com.google.common.base.Objects;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.MutableClassToInstanceMap;
@@ -32,6 +33,7 @@ import com.google.common.reflect.Invokable;
 import com.google.common.reflect.Parameter;
 import com.google.common.reflect.Reflection;
 import com.google.common.reflect.TypeToken;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -50,9 +52,8 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 /**
  * A test utility that verifies that your methods and constructors throw {@link
  * NullPointerException} or {@link UnsupportedOperationException} whenever null is passed to a
- * parameter that isn't annotated with {@link javax.annotation.Nullable}, {@link
- * javax.annotation.CheckForNull}, or {@link
- * org.checkerframework.checker.nullness.compatqual.NullableDecl}.
+ * parameter that isn't annotated with an annotation with the simple name {@code Nullable}, {@lcode
+ * CheckForNull}, {@link NullableType}, or {@link NullableDecl}.
  *
  * <p>The tested methods and constructors are invoked -- each time with one parameter being null and
  * the rest not null -- and the test fails if no expected exception is thrown. {@code
@@ -472,10 +473,16 @@ public final class NullPointerTester {
     return param.getType().getRawType().isPrimitive() || isNullable(param);
   }
 
+  private static final ImmutableSet<String> NULLABLE_ANNOTATION_SIMPLE_NAMES =
+      ImmutableSet.of("CheckForNull", "Nullable", "NullableDecl", "NullableType");
+
   static boolean isNullable(AnnotatedElement e) {
-    return e.isAnnotationPresent(javax.annotation.CheckForNull.class)
-        || e.isAnnotationPresent(javax.annotation.Nullable.class)
-        || e.isAnnotationPresent(NullableDecl.class);
+    for (Annotation annotation : e.getAnnotations()) {
+      if (NULLABLE_ANNOTATION_SIMPLE_NAMES.contains(annotation.annotationType().getSimpleName())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private boolean isIgnored(Member member) {
