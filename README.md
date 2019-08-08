@@ -4,9 +4,8 @@
 [![Build Status](https://travis-ci.org/google/guava.svg?branch=master)](https://travis-ci.org/google/guava)
 
 Guava is a set of core libraries that includes new collection types (such as
-multimap and multiset), immutable collections, a graph library, functional
-types, an in-memory cache, and APIs/utilities for concurrency, I/O, hashing,
-primitives, reflection, string processing, and much more!
+multimap and multiset), immutable collections, a graph library, and utilities
+for concurrency, I/O, hashing, primitives, strings, and more!
 
 Guava comes in two flavors.
 
@@ -66,6 +65,7 @@ flavor.
 - [GitHub project](https://github.com/google/guava)
 - [Issue tracker: Report a defect or feature request](https://github.com/google/guava/issues/new)
 - [StackOverflow: Ask "how-to" and "why-didn't-it-work" questions](https://stackoverflow.com/questions/ask?tags=guava+java)
+- [guava-announce: Announcements of releases and upcoming significant changes](http://groups.google.com/group/guava-announce)
 - [guava-discuss: For open-ended questions and discussion](http://groups.google.com/group/guava-discuss)
 
 ## IMPORTANT WARNINGS
